@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Unlit_Drawer
+  m_Shader: {fileID: 4800000, guid: 847199a32b56c6c40883335006b38f53, type: 3}
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: 3000
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 56324de1b458acd489ad1acc1e1b6744, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RegionsTexture:
+        m_Texture: {fileID: 2800000, guid: 8e28ff73097b1c94b8f58fcd65c2ad0e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Radius: 0
+    - _SelectedRegion: -1
+    - _selectedRegion: 0
+    m_Colors:
+    - _SelectedColor: {r: 1, g: 0, b: 0, a: 1}
+    - _TouchPos: {r: 0.23953485, g: 0.7158139, b: 0, a: 0}
+  m_BuildTextureStacks: []
