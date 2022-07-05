@@ -1,0 +1,49 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+#pragma kernel CSCopyAABBsToRWTex
+
+Texture2D<float4> inputTexture;
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> Result;
+RWStructuredBuffer<uint> AABBs;//所有区域的AABB包围盒
+RWTexture2D<float4> AABBsTex;//所有区域的AABB包围盒
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+    float R = inputTexture[id.xy].r;
+    float G = inputTexture[id.xy].g;
+    float B = inputTexture[id.xy].b;
+
+    int regionIndex = round(R*255) * 65536 + round(G*255) * 256 + round(B*255);
+
+    // Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+    // 目标区域index = 1
+    if (regionIndex == 1)
+    {
+        Result[id.xy] = 1;
+        InterlockedMin(AABBs[0], id.x);
+        InterlockedMin(AABBs[1], id.y);
+        InterlockedMax(AABBs[2], id.x);
+        InterlockedMax(AABBs[3], id.y);
+    }
+    else
+    {
+        Result[id.xy] = 0;
+    }
+    
+    // Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+}
+
+[numthreads(1,1,1)]
+void CSCopyAABBsToRWTex (uint3 id : SV_DispatchThreadID)
+{
+    //copy
+    AABBsTex[uint2(0,0)] = float4( AABBs[0]/2048.0, AABBs[1]/2048.0, AABBs[2]/2048.0, AABBs[3]/2048.0);
+    // AABBsTex[uint2(0,0)] = float4( AABBs[0], AABBs[1], AABBs[2], AABBs[3]);
+    // AABBsTex[uint2(0,0)] = float4( AABBs[0],0,0,0);
+    
+}
