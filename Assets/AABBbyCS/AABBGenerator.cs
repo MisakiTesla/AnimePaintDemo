@@ -4,15 +4,33 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
+public struct AABBData
+{
+    public AABBData(uint minX, uint minY, uint maxX, uint maxY)
+    {
+        this.minX = minX;
+        this.minY = minY;
+        this.maxX = maxX;
+        this.maxY = maxY;
+    }
+    public uint minX;
+    public uint minY;
+    public uint maxX;
+    public uint maxY;
+}
+
 public class AABBGenerator : MonoBehaviour
 {
     public Texture2D inputTexture;
     public RenderTexture outputRT;
     public RenderTexture aabbRT;
     public ComputeShader shader;
+    [Header("最大区域数")]
+    public int maxRegionCount = 32;
 
+    [Header("预览")]
     public RawImage outputRawImage;
-    
+
     // Start is called before the first frame update
     void Start()
     {
@@ -20,16 +38,23 @@ public class AABBGenerator : MonoBehaviour
         outputRT.enableRandomWrite = true;
         outputRawImage.texture = outputRT;
 
-        
         var kernelId = shader.FindKernel("CSMain");
         shader.SetTexture(kernelId, "inputTexture", inputTexture);
+        shader.SetInt( "inputTextureSizeX", inputTexture.width);
+        shader.SetInt( "inputTextureSizeY", inputTexture.width);
         shader.SetTexture(kernelId, "Result", outputRT);
 
-        ComputeBuffer buffer = new ComputeBuffer(4, sizeof(uint));
-        buffer.SetData(new List<uint>()
+        //最大区域数
+        var AABBMaxCount = maxRegionCount;
+        ComputeBuffer buffer = new ComputeBuffer(AABBMaxCount, 4*4);
+
+        var defaultAABB = new AABBData((uint)inputTexture.width, (uint)inputTexture.width, 0, 0);
+        var aabbDatas = new AABBData[AABBMaxCount];
+        for (int i = 0; i < aabbDatas.Length; i++)
         {
-            2048,2048,0,0
-        });
+            aabbDatas[i] = new AABBData((uint)inputTexture.width, (uint)inputTexture.height, 0, 0);
+        }
+        buffer.SetData(aabbDatas);
         shader.SetBuffer(kernelId, "AABBs", buffer);
         
         shader.Dispatch(kernelId, inputTexture.width, inputTexture.height, 1);
@@ -41,7 +66,7 @@ public class AABBGenerator : MonoBehaviour
         // countBuffer.GetData(countBufferData);
         // //buffer中的元素数量即为：countBufferData[0]
         
-        aabbRT = new RenderTexture(1, 1, 24);
+        aabbRT = new RenderTexture(AABBMaxCount, 1, 24);
         aabbRT.enableRandomWrite = true;
         // outputRawImage.texture = outputRT;
 
@@ -49,13 +74,19 @@ public class AABBGenerator : MonoBehaviour
         shader.SetTexture(copyKernelId, "AABBsTex", aabbRT);
         shader.SetBuffer(copyKernelId, "AABBs", buffer);
         //copy RWStructuredBuffer<uint> AABBs To AABBsTex so we can read back later
-        shader.Dispatch(copyKernelId, 1, 1, 1);
+        shader.Dispatch(copyKernelId, AABBMaxCount, 1, 1);
         
         //read back
         var aabbTex = RenderTexture2Texture2D(aabbRT);
-        var aabb = aabbTex.GetPixel(0, 0);
-        Debug.Log($"AABB is min = ({aabb.r},{aabb.g}), max = {aabb.b},{aabb.a}");
+        foreach (var aabb in aabbTex.GetPixels(0))
+        {
+            Debug.Log($"AABB is min = ({aabb.r},{aabb.g}), max = {aabb.b},{aabb.a}");
+
+        }
+
         buffer.Release();
+        aabbTex.filterMode = FilterMode.Point;
+        outputRawImage.texture = aabbTex;
     }
 
     Texture2D RenderTexture2Texture2D(RenderTexture renderTexture)

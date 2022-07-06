@@ -3,11 +3,22 @@
 #pragma kernel CSCopyAABBsToRWTex
 
 Texture2D<float4> inputTexture;
+uint inputTextureSizeX;
+uint inputTextureSizeY;
 
 // Create a RenderTexture with enableRandomWrite flag and set it
 // with cs.SetTexture
 RWTexture2D<float4> Result;
-RWStructuredBuffer<uint> AABBs;//所有区域的AABB包围盒
+
+struct AABBData
+{
+    uint minX;
+    uint minY;
+    uint maxX;
+    uint maxY;
+};
+
+RWStructuredBuffer<AABBData> AABBs;//所有区域的AABB包围盒
 RWTexture2D<float4> AABBsTex;//所有区域的AABB包围盒
 
 [numthreads(8,8,1)]
@@ -22,27 +33,30 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
     // Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
     // 目标区域index = 1
-    if (regionIndex == 1)
+    int maxRegionCount = 32;
+    if (regionIndex > 0 && regionIndex < maxRegionCount)
     {
-        Result[id.xy] = 1;
-        InterlockedMin(AABBs[0], id.x);
-        InterlockedMin(AABBs[1], id.y);
-        InterlockedMax(AABBs[2], id.x);
-        InterlockedMax(AABBs[3], id.y);
+        int index = regionIndex - 1;
+
+        // Result[id.xy] = 1;
+        InterlockedMin(AABBs[index].minX, id.x);
+        InterlockedMin(AABBs[index].minY, id.y);
+        InterlockedMax(AABBs[index].maxX, id.x);
+        InterlockedMax(AABBs[index].maxY, id.y);
     }
     else
     {
-        Result[id.xy] = 0;
+        // Result[id.xy] = 0;
     }
     
     // Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
 }
 
-[numthreads(1,1,1)]
+[numthreads(64,1,1)]
 void CSCopyAABBsToRWTex (uint3 id : SV_DispatchThreadID)
 {
     //copy
-    AABBsTex[uint2(0,0)] = float4( AABBs[0]/2048.0, AABBs[1]/2048.0, AABBs[2]/2048.0, AABBs[3]/2048.0);
+    AABBsTex[id.xy] = float4( AABBs[id.x].minX/float(inputTextureSizeX), AABBs[id.x].minY/float(inputTextureSizeY), AABBs[id.x].maxX/float(inputTextureSizeX), AABBs[id.x].maxY/float(inputTextureSizeY));
     // AABBsTex[uint2(0,0)] = float4( AABBs[0], AABBs[1], AABBs[2], AABBs[3]);
     // AABBsTex[uint2(0,0)] = float4( AABBs[0],0,0,0);
     
