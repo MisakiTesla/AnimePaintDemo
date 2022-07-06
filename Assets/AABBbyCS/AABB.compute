@@ -31,8 +31,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
     int regionIndex = round(R*255) * 65536 + round(G*255) * 256 + round(B*255);
 
-    // Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
-    // 目标区域index = 1
+    // 这个大小和AABBGenerator里的maxRegionCount一样,讲道理应该从外面setInt
     int maxRegionCount = 32;
     if (regionIndex > 0 && regionIndex < maxRegionCount)
     {
@@ -44,12 +43,6 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         InterlockedMax(AABBs[index].maxX, id.x);
         InterlockedMax(AABBs[index].maxY, id.y);
     }
-    else
-    {
-        // Result[id.xy] = 0;
-    }
-    
-    // Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
 }
 
 [numthreads(64,1,1)]
@@ -57,7 +50,4 @@ void CSCopyAABBsToRWTex (uint3 id : SV_DispatchThreadID)
 {
     //copy
     AABBsTex[id.xy] = float4( AABBs[id.x].minX/float(inputTextureSizeX), AABBs[id.x].minY/float(inputTextureSizeY), AABBs[id.x].maxX/float(inputTextureSizeX), AABBs[id.x].maxY/float(inputTextureSizeY));
-    // AABBsTex[uint2(0,0)] = float4( AABBs[0], AABBs[1], AABBs[2], AABBs[3]);
-    // AABBsTex[uint2(0,0)] = float4( AABBs[0],0,0,0);
-    
 }

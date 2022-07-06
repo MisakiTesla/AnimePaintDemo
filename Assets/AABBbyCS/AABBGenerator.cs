@@ -23,6 +23,7 @@ public class AABBGenerator : MonoBehaviour
 {
     public Texture2D inputTexture;
     public RenderTexture outputRT;
+    [Header("AABB计算结果")]
     public RenderTexture aabbRT;
     public ComputeShader shader;
     [Header("最大区域数")]
